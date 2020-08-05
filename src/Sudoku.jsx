@@ -27,6 +27,11 @@ export function Sudoku() {
     const newState = cloneDeep(state);
 
     const validatedValue = validate(value, prevValue);
+
+    if (validatedValue === prevValue) {
+        return;
+    }
+
     newState[quadrantId][cellId] = validatedValue;
 
     setState(newState);
@@ -82,6 +87,11 @@ export function Sudoku() {
       >
         Уменьшить размер
       </button>
+      <div>
+          <button>
+              Решить
+          </button>
+      </div>
     </div>
   );
 }
