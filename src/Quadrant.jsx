@@ -3,7 +3,7 @@ import './Quadrant.css';
 import { Cell } from './Cell';
 
 export function Quadrant(props) {
-    const { numbers, quadrantId, setState } = props;
+    const { numbers, quadrantId, changeState } = props;
 
     return (
         <div
@@ -21,7 +21,7 @@ export function Quadrant(props) {
                     key={index}
                     cellId={index}
                     quadrantId={quadrantId}
-                    setState={setState}
+                    changeState={changeState}
                 ></Cell>
             ))}
         </div>
