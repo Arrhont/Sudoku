@@ -34,6 +34,10 @@ class Cell {
     }
 
     removePossibleValue(value) {
+        if(this.possibleValues.size === 1 && this.possibleValues.has(value)) {
+            throw new Error(`Cell ${this.id} has no possible values left`);
+        }
+
         this.possibleValues.delete(value);
     }
 
@@ -126,34 +130,34 @@ class Sudoku {
     }
 
     validateSudoku() {
-        const isColumnsValid = this.validate(this.columns);
-        const isRowsValid = this.validate(this.rows);
-        const isQuadrantsValid = this.validate(this.quadrants);
+        const isColumnsInvalid = this.hasDuplicates(this.columns);
+        const isRowsInvalid = this.hasDuplicates(this.rows);
+        const isQuadrantsInvalid = this.hasDuplicates(this.quadrants);
 
-        if (!isColumnsValid) {
+        if (isColumnsInvalid) {
             throw new Error('Ошибка! Дублирование значений в столбцах.');
         }
 
-        if (!isRowsValid) {
+        if (isRowsInvalid) {
             throw new Error('Ошибка! Дублирование значений в строках.');
         }
 
-        if (!isQuadrantsValid) {
+        if (isQuadrantsInvalid) {
             throw new Error('Ошибка! Дублирование значений в квадрантах.');
         }
     }
 
-    validate(arr) {
+    hasDuplicates(arr) {
         for (const elem of arr) {
             const values = elem.map((cell) => cell.value);
             pull(values, 0);
             const set = new Set(values);
 
             if (set.size !== values.length) {
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
     }
 
@@ -163,10 +167,9 @@ class Sudoku {
 
             if (value !== 0) {
                 this.cells.forEach((iteratingCell) => {
-                    if (iteratingCell === cell) {
+
+                    if (iteratingCell === cell || iteratingCell.value !== 0) {
                         return;
-                    }
-                    if (iteratingCell.id === '1_0') {
                     }
 
                     if (
@@ -181,35 +184,59 @@ class Sudoku {
         }
     }
 
+    getValues() {
+        const values = [];
+
+        for (const quadrant of this.quadrants) {
+            values.push(...quadrant.map((cell) => cell.value));
+        }
+        return values;
+    }
+
+    checkValuesChange(prevValues) {
+        const currentValues = this.getValues();
+        
+        if(currentValues.length !== prevValues.length) {
+            throw new Error('Some Cells are added/deleted during solving... Not good');
+        }
+
+        for (let i = 0; i < currentValues.length; i++) {
+            if (currentValues[i] !== prevValues[i]) {
+                return true;
+            }   
+        }
+
+        return false;
+    }
+
     determineValues() {
         for (let cell of this.cells) {
             cell.tryToCalculateValue();
         }
     }
 
-    getValues() {
-        const values = [];
+    solveUntillLoop() {
+        let valuesAreChanged;
+        
+        do {
+            const prevValues = this.getValues();
 
-        for (const quadrant of this.quadrants) {
-            values.push(quadrant.map((cell) => cell.value));
-        }
+            this.calculateNewPossibleValues();
+            this.determineValues();
 
-        return values;
+            valuesAreChanged = this.checkValuesChange(prevValues);
+        } while (valuesAreChanged);
+    }
+
+    solve() {
+
     }
 }
 
 const sudoku = new Sudoku(mock);
 console.log(sudoku.getValues())
-sudoku.calculateNewPossibleValues();
-sudoku.determineValues();
-sudoku.calculateNewPossibleValues();
-sudoku.determineValues();
-sudoku.calculateNewPossibleValues();
-sudoku.determineValues();
-sudoku.calculateNewPossibleValues();
-sudoku.determineValues();
-sudoku.calculateNewPossibleValues();
-sudoku.determineValues();
-console.log(sudoku.getValues());
+sudoku.solveUntillLoop();
+console.log(sudoku.getValues())
+
 
 
