@@ -1,4 +1,3 @@
-
 //import pull from 'lodash/pull';
 
 const pull = require('lodash/pull');
@@ -18,10 +17,11 @@ const mock = [
 
 class Cell {
     constructor(cellData) {
-        this.x = cellData.x;
-        this.y = cellData.y;
-        this.sudokuSize = cellData.sudokuSize;
+        this.id = cellData.row + '_' + cellData.column;
         this.value = cellData.value;
+        this.row = cellData.row;
+        this.column = cellData.column;
+        this.sudokuSize = cellData.sudokuSize;
         this.quadrant = cellData.quadrant;
 
         const possibleValues = new Set();
@@ -34,15 +34,15 @@ class Cell {
     }
 
     removePossibleValue(value) {
-      this.possibleValues.delete(value);
+        this.possibleValues.delete(value);
     }
 
     tryToCalculateValue() {
         if (this.possibleValues.size === 1) {
             for (const lastValue of this.possibleValues) {
-              this.value = lastValue;
+                this.value = lastValue;
             }
-          }
+        }
     }
 }
 
@@ -70,8 +70,8 @@ class Sudoku {
             for (let j = 0; j < this.numberOfQuadrants; j++) {
                 this.cells.push(
                     new Cell({
-                        x: i,
-                        y: j,
+                        row: i,
+                        column: j,
                         value: this.getValueByCoords(i, j),
                         quadrant: this.getQuadrantByCoords(i, j),
                         sudokuSize: this.numberOfQuadrants,
@@ -82,27 +82,27 @@ class Sudoku {
 
         for (const cell of this.cells) {
             this.quadrants[cell.quadrant].push(cell);
-            this.rows[cell.x].push(cell);
-            this.columns[cell.y].push(cell);
+            this.rows[cell.row].push(cell);
+            this.columns[cell.column].push(cell);
         }
 
         this.validateSudoku();
     }
 
     validateSudokuDimension() {
-      if (this.dimensionSize % 1 !== 0) {
-          throw new TypeError(
-              'Длина массива значений квадрантов должна быть квадратом натурального числа'
-          );
-      }
-  
-      for (const quadrant of this.sudokuDefinition) {
-          if (quadrant.length !== this.dimensionSize * this.dimensionSize) {
-              throw new TypeError(
-                  'Длина массива значений квадранта должна быть квадратом размерности судоку'
-              );
-          }
-      }
+        if (this.dimensionSize % 1 !== 0) {
+            throw new TypeError(
+                'Длина массива значений квадрантов должна быть квадратом натурального числа'
+            );
+        }
+
+        for (const quadrant of this.sudokuDefinition) {
+            if (quadrant.length !== this.dimensionSize * this.dimensionSize) {
+                throw new TypeError(
+                    'Длина массива значений квадранта должна быть квадратом размерности судоку'
+                );
+            }
+        }
     }
 
     getQuadrantByCoords(x, y) {
@@ -131,15 +131,15 @@ class Sudoku {
         const isQuadrantsValid = this.validate(this.quadrants);
 
         if (!isColumnsValid) {
-          throw new Error('Ошибка! Дублирование значений в столбцах.');
+            throw new Error('Ошибка! Дублирование значений в столбцах.');
         }
 
         if (!isRowsValid) {
-          throw new Error('Ошибка! Дублирование значений в строках.');
+            throw new Error('Ошибка! Дублирование значений в строках.');
         }
 
         if (!isQuadrantsValid) {
-          throw new Error('Ошибка! Дублирование значений в квадрантах.');
+            throw new Error('Ошибка! Дублирование значений в квадрантах.');
         }
     }
 
@@ -156,8 +156,60 @@ class Sudoku {
             return true;
         }
     }
-    
+
+    calculateNewPossibleValues() {
+        for (const cell of this.cells) {
+            const { value, quadrant, row, column } = cell;
+
+            if (value !== 0) {
+                this.cells.forEach((iteratingCell) => {
+                    if (iteratingCell === cell) {
+                        return;
+                    }
+                    if (iteratingCell.id === '1_0') {
+                    }
+
+                    if (
+                        iteratingCell.row === row ||
+                        iteratingCell.column === column ||
+                        iteratingCell.quadrant === quadrant
+                    ) {
+                        iteratingCell.removePossibleValue(value);
+                    }
+                });
+            }
+        }
+    }
+
+    determineValues() {
+        for (let cell of this.cells) {
+            cell.tryToCalculateValue();
+        }
+    }
+
+    getValues() {
+        const values = [];
+
+        for (const quadrant of this.quadrants) {
+            values.push(quadrant.map((cell) => cell.value));
+        }
+
+        return values;
+    }
 }
 
 const sudoku = new Sudoku(mock);
-console.log(sudoku)
+console.log(sudoku.getValues())
+sudoku.calculateNewPossibleValues();
+sudoku.determineValues();
+sudoku.calculateNewPossibleValues();
+sudoku.determineValues();
+sudoku.calculateNewPossibleValues();
+sudoku.determineValues();
+sudoku.calculateNewPossibleValues();
+sudoku.determineValues();
+sudoku.calculateNewPossibleValues();
+sudoku.determineValues();
+console.log(sudoku.getValues());
+
+
