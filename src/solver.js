@@ -1,104 +1,163 @@
+
 //import pull from 'lodash/pull';
 
 const pull = require('lodash/pull');
+const cloneDeep = require('lodash/cloneDeep');
 
 const mock = [
-  [2, 1, 5, 0, 6, 4, 7, 8, 9],
-  [7, 0, 6, 1, 5, 8, 3, 0, 0],
-  [8, 3, 0, 7, 2, 9, 5, 6, 0],
-  [6, 7, 0, 5, 0, 2, 8, 4, 1],
-  [0, 1, 0, 8, 4, 3, 2, 6, 7],
-  [4, 0, 2, 1, 0, 6, 0, 0, 5],
-  [0, 3, 6, 0, 0, 0, 0, 5, 8],
-  [4, 8, 9, 5, 3, 1, 0, 7, 2],
-  [2, 5, 0, 6, 4, 8, 0, 0, 0],
-];
+    [2, 1, 5, 0, 6, 4, 7, 8, 9],
+    [7, 0, 6, 1, 5, 8, 3, 0, 0],
+    [8, 3, 0, 7, 2, 9, 5, 6, 0],
+    [6, 7, 0, 5, 0, 2, 8, 4, 1],
+    [0, 1, 0, 8, 4, 3, 2, 6, 7],
+    [4, 0, 2, 1, 0, 6, 0, 0, 5],
+    [0, 3, 6, 0, 0, 0, 0, 5, 8],
+    [4, 8, 9, 5, 3, 1, 0, 7, 2],
+    [2, 5, 0, 6, 4, 8, 0, 0, 0],
+]; //Zero means empty cell
 
-function getNumberByCoords(arr, x, y) {
-  const numberOfQuadrants = arr.length;
-  const dimensionSize = Math.sqrt(numberOfQuadrants);
+class Cell {
+    constructor(cellData) {
+        this.x = cellData.x;
+        this.y = cellData.y;
+        this.sudokuSize = cellData.sudokuSize;
+        this.value = cellData.value;
+        this.quadrant = cellData.quadrant;
 
-  if (x >= numberOfQuadrants || y >= numberOfQuadrants) {
-    throw new TypeError('Недопустимые координаты');
-  }
+        const possibleValues = new Set();
+        for (let i = 0; i < this.sudokuSize; i++) {
+            possibleValues.add(i + 1);
+        }
 
-  const quadrant = Math.floor(x / dimensionSize) * dimensionSize + Math.floor(y / dimensionSize);
-  const quadrantX = x % dimensionSize;
-  const quadrantY = y % dimensionSize;
-  const index = quadrantX * dimensionSize + quadrantY;
+        this.possibleValues =
+            this.value === 0 ? possibleValues : new Set([cellData.value]);
+    }
 
-  return arr[quadrant][index];
+    removePossibleValue(value) {
+      this.possibleValues.delete(value);
+    }
+
+    tryToCalculateValue() {
+        if (this.possibleValues.size === 1) {
+            for (const lastValue of this.possibleValues) {
+              this.value = lastValue;
+            }
+          }
+    }
 }
 
-function createTwoDimArrFromQuadrants(quadrantsArr) {
-  const numberOfQuadrants = quadrantsArr.length;
-  const dimensionSize = Math.sqrt(numberOfQuadrants);
+class Sudoku {
+    constructor(quadrantsArr) {
+        this.sudokuDefinition = cloneDeep(quadrantsArr);
+        this.cells = [];
 
-  const twoDimArr = new Array(dimensionSize);
+        this.numberOfQuadrants = this.sudokuDefinition.length;
+        this.dimensionSize = Math.sqrt(this.numberOfQuadrants);
 
-  for (let i = 0; i < numberOfQuadrants ; twoDimArr[i++] = []);
+        this.validateSudokuDimension();
 
-  for (let i = 0; i < numberOfQuadrants; i++) {
-    for (let j = 0; j < numberOfQuadrants; j++ ){
-      twoDimArr[i][j] = getNumberByCoords(quadrantsArr, i, j);
+        this.quadrants = new Array(this.numberOfQuadrants);
+        this.columns = new Array(this.numberOfQuadrants);
+        this.rows = new Array(this.numberOfQuadrants);
+
+        for (let i = 0; i < this.numberOfQuadrants; i++) {
+            this.quadrants[i] = [];
+            this.columns[i] = [];
+            this.rows[i] = [];
+        }
+
+        for (let i = 0; i < this.numberOfQuadrants; i++) {
+            for (let j = 0; j < this.numberOfQuadrants; j++) {
+                this.cells.push(
+                    new Cell({
+                        x: i,
+                        y: j,
+                        value: this.getValueByCoords(i, j),
+                        quadrant: this.getQuadrantByCoords(i, j),
+                        sudokuSize: this.numberOfQuadrants,
+                    })
+                );
+            }
+        }
+
+        for (const cell of this.cells) {
+            this.quadrants[cell.quadrant].push(cell);
+            this.rows[cell.x].push(cell);
+            this.columns[cell.y].push(cell);
+        }
+
+        this.validateSudoku();
     }
-  }
 
-  return twoDimArr;
+    validateSudokuDimension() {
+      if (this.dimensionSize % 1 !== 0) {
+          throw new TypeError(
+              'Длина массива значений квадрантов должна быть квадратом натурального числа'
+          );
+      }
+  
+      for (const quadrant of this.sudokuDefinition) {
+          if (quadrant.length !== this.dimensionSize * this.dimensionSize) {
+              throw new TypeError(
+                  'Длина массива значений квадранта должна быть квадратом размерности судоку'
+              );
+          }
+      }
+    }
+
+    getQuadrantByCoords(x, y) {
+        return (
+            Math.floor(x / this.dimensionSize) * this.dimensionSize +
+            Math.floor(y / this.dimensionSize)
+        );
+    }
+
+    getValueByCoords(x, y) {
+        if (x >= this.numberOfQuadrants || y >= this.numberOfQuadrants) {
+            throw new TypeError('Недопустимые координаты');
+        }
+
+        const quadrant = this.getQuadrantByCoords(x, y);
+        const quadrantX = x % this.dimensionSize;
+        const quadrantY = y % this.dimensionSize;
+        const index = quadrantX * this.dimensionSize + quadrantY;
+
+        return this.sudokuDefinition[quadrant][index];
+    }
+
+    validateSudoku() {
+        const isColumnsValid = this.validate(this.columns);
+        const isRowsValid = this.validate(this.rows);
+        const isQuadrantsValid = this.validate(this.quadrants);
+
+        if (!isColumnsValid) {
+          throw new Error('Ошибка! Дублирование значений в столбцах.');
+        }
+
+        if (!isRowsValid) {
+          throw new Error('Ошибка! Дублирование значений в строках.');
+        }
+
+        if (!isQuadrantsValid) {
+          throw new Error('Ошибка! Дублирование значений в квадрантах.');
+        }
+    }
+
+    validate(arr) {
+        for (const elem of arr) {
+            const values = elem.map((cell) => cell.value);
+            pull(values, 0);
+            const set = new Set(values);
+
+            if (set.size !== values.length) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+    
 }
 
-function validateSudoku(quadrantsArr) {
-  const numberOfQuadrants = quadrantsArr.length;
-  const dimensionSize = Math.sqrt(numberOfQuadrants);
-
-  if (dimensionSize % 1 !== 0) {
-    throw new TypeError('Длина массива значений квадрантов должна быть квадратом натурального числа');
-  }
-
-  for (const quadrant of quadrantsArr) {
-    if(quadrant.length !== dimensionSize * dimensionSize) {
-      throw new TypeError('Длина массива значений квадранта должна быть квадратом размерности судоку');
-    }
-  }
-
-  for (const quadrant of quadrantsArr) {
-    const zerolessArr = pull([...quadrant], 0);
-    const set = new Set(zerolessArr);
-
-    if (set.size !== zerolessArr.length) {
-      return false;
-    }
-  }
-
-  const twoDimArr = createTwoDimArrFromQuadrants(quadrantsArr);
-
-  for (const lineX of twoDimArr) {
-    const zerolessArr = pull([...lineX], 0);
-    const set = new Set(zerolessArr);
-
-    if (set.size !== zerolessArr.length) {
-      return false;
-    }
-  }
-
-  for (let i = 0; i < numberOfQuadrants; i++) {
-    const lineY = [];
-
-    for (let j=0; j < numberOfQuadrants; j++) {
-      lineY.push(twoDimArr[i][j]);
-    }
-
-    const zerolessArr = pull([...lineY], 0);
-    const set = new Set(zerolessArr);
-
-    if (set.size !== zerolessArr.length) {
-      return false;
-    }
-
-    return true;
-  }
-
-}
-
-console.log(validateSudoku(mock));
-console.log(createTwoDimArrFromQuadrants(mock));
+const sudoku = new Sudoku(mock);
+console.log(sudoku)
