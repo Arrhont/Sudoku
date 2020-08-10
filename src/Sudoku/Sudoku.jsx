@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Quadrant } from '../Quadrant/Quadrant';
 import cloneDeep from 'lodash/cloneDeep';
+import { Sudoku as SudokuSolver } from './solver'
 import './Sudoku.css';
 
 export function Sudoku() {
@@ -44,6 +45,14 @@ export function Sudoku() {
         return true;
     }
 
+    function solve() {
+        const sudoku = new SudokuSolver(quadrants);
+        console.log(sudoku)
+        sudoku.solve();
+
+        setQuadrants(sudoku.getValuesByQuadrant());
+    }
+
     return (
         <div>
             <div
@@ -71,7 +80,7 @@ export function Sudoku() {
                 }}
             ></input>
             <div>
-                <button>Решить</button>
+                <button onClick={solve}>Решить</button>
             </div>
         </div>
     );
