@@ -14,32 +14,33 @@ export class Cell {
       }
 
       this.possibleValues =
-          this.value === 0 ? possibleValues : new Set([cellData.value]);
+          this.value === 0 ? possibleValues : new Set();
   }
 
   removePossibleValue(value) {
-      if (this.possibleValues.size === 1 && this.possibleValues.has(value)) {
-          throw new Error(`Cell ${this.id} has no possible values left`);
-      }
 
-      this.possibleValues.delete(value);
-  }
+      const isRemoved = this.possibleValues.delete(value);
 
-  tryToCalculateValue() {
       if (this.possibleValues.size === 1) {
-          for (const lastValue of this.possibleValues) {
-              this.value = lastValue;
-          }
+          [this.value] = this.possibleValues.values();
+          this.possibleValues = new Set();
       }
+      
+
+    return isRemoved;
   }
 
   setValue(value) {
-      if(this.possibleValues.size === 1) {
+      if(this.value !== 0) {
+          return;
+      }
+
+      if(this.possibleValues.size === 0) {
           throw new Error('Setting an already calculated value');
       }
 
       if(this.possibleValues.has(value)) {
-          this.possibleValues = new Set([value]);
+          this.possibleValues = new Set();
           this.value = value;
       }
   }
