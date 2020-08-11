@@ -32,4 +32,15 @@ export class Cell {
           }
       }
   }
+
+  setValue(value) {
+      if(this.possibleValues.size === 1) {
+          throw new Error('Setting an already calculated value');
+      }
+
+      if(this.possibleValues.has(value)) {
+          this.possibleValues = new Set([value]);
+          this.value = value;
+      }
+  }
 }

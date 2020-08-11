@@ -120,7 +120,7 @@ export class Sudoku {
         }
     }
 
-    calculateNewPossibleValues() {
+    updatePossibleValuesMarkdown() {
         for (const cell of this.cells) {
             const { value, quadrant, row, column } = cell;
 
@@ -176,11 +176,13 @@ export class Sudoku {
         return false;
     }
 
-    determineValues() {
+    determineValuesByMarkdown() {
         for (let cell of this.cells) {
             cell.tryToCalculateValue();
         }
     }
+
+
 
     solveUntillLoop() {
         let valuesAreChanged;
@@ -188,8 +190,8 @@ export class Sudoku {
         do {
             const prevValues = this.getValues();
 
-            this.calculateNewPossibleValues();
-            this.determineValues();
+            this.updatePossibleValuesMarkdown();
+            this.determineValuesByMarkdown();
 
             valuesAreChanged = this.checkValuesChange(prevValues);
         } while (valuesAreChanged);
