@@ -1,4 +1,3 @@
-import pull from 'lodash/pull';
 import { Cell } from './cell';
 import cloneDeep from 'lodash/cloneDeep';
 
@@ -38,9 +37,9 @@ export class Sudoku {
 
     this.validateSudokuDimension();
 
-    this.cellQuadrants = new Array(this.sudokuSize).fill('').map(() => []);
-    this.cellColumns = new Array(this.sudokuSize).fill('').map(() => []);
-    this.cellRows = new Array(this.sudokuSize).fill('').map(() => []);
+    this.cellQuadrants = Array.from(new Array(this.sudokuSize)).map(() => []);
+    this.cellColumns = Array.from(new Array(this.sudokuSize)).map(() => []);
+    this.cellRows = Array.from(new Array(this.sudokuSize)).map(() => []);
 
     for (const cell of this.cells) {
       this.cellQuadrants[cell.quadrant].push(cell);
@@ -107,33 +106,49 @@ export class Sudoku {
 
   hasDuplicateValues(arr) {
     for (const elem of arr) {
-      const values = elem.map((cell) => cell.value);
-      pull(values, 0); //Zero means empty cell and is not a duplicate value
+      const values = elem
+        .map((cell) => cell.value)
+        .filter(value => value !== 0);
       const set = new Set(values);
 
       if (set.size !== values.length) {
         return true;
       }
-
-      return false;
     }
+
+    return false;
+  }
+
+  getValuesByQuadrant() {
+    const values = [];
+
+    for (const quadrant of this.cellQuadrants) {
+      values.push(quadrant.map((cell) => cell.value));
+    }
+    return values;
+  }
+
+  getValues() {
+    return this.getValuesByQuadrant().flat();
   }
 
   updatePossibleValues() {
     let isSomethingRemoved = this.updateByValues();
     
-    this.cellQuadrants.forEach((cellBlock) =>
-      this.updateByUniquePossibleValueInBlock(cellBlock)
-    );
-    this.cellRows.forEach((cellBlock) =>
-      this.updateByUniquePossibleValueInBlock(cellBlock)
-    );
-    this.cellColumns.forEach((cellBlock) =>
-      this.updateByUniquePossibleValueInBlock(cellBlock)
-    );
+    // this.cellQuadrants.forEach((cellBlock) =>
+    //   this.updateByUniquePossibleValueInBlock(cellBlock)
+    // );
+    // this.cellRows.forEach((cellBlock) =>
+    //   this.updateByUniquePossibleValueInBlock(cellBlock)
+    // );
+    // this.cellColumns.forEach((cellBlock) =>
+    //   this.updateByUniquePossibleValueInBlock(cellBlock)
+    // );
 
     return isSomethingRemoved;
   }
+
+  
 
   updateByValues() {
     let isSomethingRemoved = false;
@@ -179,6 +194,7 @@ export class Sudoku {
   updateByUniquePossibleValueInBlock(cellBlock) {
     // block is row, column, or quadrant
     const possibleValueToCellsMap = new Map();
+    let isSomethingIsSet = false;
 
     for (let value = 1; value <= this.sudokuSize; value++) {
       possibleValueToCellsMap.set(value, []);
@@ -193,33 +209,54 @@ export class Sudoku {
     for (const [value, cells] of possibleValueToCellsMap) {
       if (cells.length === 1) {
         cells[0].setValue(value);
+        isSomethingIsSet = true;
       }
     }
-  }
 
-  getValuesByQuadrant() {
-    const values = [];
-
-    for (const quadrant of this.cellQuadrants) {
-      values.push(quadrant.map((cell) => cell.value));
-    }
-    return values;
-  }
-
-  getValues() {
-    return this.getValuesByQuadrant().flat();
+    return isSomethingIsSet;
   }
 
   solveUntillLoop() {
-    let isSomethingIsRemoved;
+    let isSomethingRemoved;
 
     do {
-      isSomethingIsRemoved = this.updatePossibleValues();
-    } while (isSomethingIsRemoved);
+      isSomethingRemoved = this.updatePossibleValues();
+    } while (isSomethingRemoved);
   }
 
   solve() {
-    this.solveUntillLoop();
+    let isSomethingIsSet;
+
+    do {
+      this.solveUntillLoop();
+
+      isSomethingIsSet = false;
+      
+      for (const quadrant of this.cellQuadrants) {
+        const isQuadrantsSet = this.updateByUniquePossibleValueInBlock(quadrant);
+
+        if (isQuadrantsSet) {
+          isSomethingIsSet = true;
+        }
+      }
+
+      for (const row of this.cellRows) {
+        const isRowsSet = this.updateByUniquePossibleValueInBlock(row);
+
+        if (isRowsSet) {
+          isSomethingIsSet = true;
+        }
+      }
+
+      for (const column of this.cellColumns) {
+         const isColumnsSet = this.updateByUniquePossibleValueInBlock(column);
+
+         if (isColumnsSet) {
+          isSomethingIsSet = true;
+        }
+      }
+
+    } while (isSomethingIsSet);
   }
 }
 
