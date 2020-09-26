@@ -47,7 +47,8 @@ export function Sudoku() {
 
     function solve() {
         const sudoku = new SudokuSolver(quadrants);
-        console.log(sudoku)
+        console.log(sudoku);
+        debugger;
         sudoku.solve();
 
         setQuadrants(sudoku.getValuesByQuadrant());

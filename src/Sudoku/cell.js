@@ -8,22 +8,22 @@ export class Cell {
       this.sudokuSize = cellData.sudokuSize;
       this.quadrant = cellData.quadrant;
 
-      const possibleValues = new Set();
+      const hints = new Set();
       for (let i = 0; i < this.sudokuSize; i++) {
-          possibleValues.add(i + 1);
+          hints.add(i + 1);
       }
 
-      this.possibleValues =
-          this.value === 0 ? possibleValues : new Set();
+      this.hints =
+          this.value === 0 ? hints : new Set();
   }
 
-  removePossibleValue(value) {
+  removeHint(value) {
 
-      const isRemoved = this.possibleValues.delete(value);
+      const isRemoved = this.hints.delete(value);
 
-      if (this.possibleValues.size === 1) {
-          [this.value] = this.possibleValues.values();
-          this.possibleValues = new Set();
+      if (this.hints.size === 1) {
+          [this.value] = this.hints.values();
+          this.hints = new Set();
       }
       
 
@@ -35,12 +35,12 @@ export class Cell {
           return;
       }
 
-      if(this.possibleValues.size === 0) {
+      if(this.hints.size === 0) {
           throw new Error('Setting an already calculated value');
       }
 
-      if(this.possibleValues.has(value)) {
-          this.possibleValues = new Set();
+      if(this.hints.has(value)) {
+          this.hints = new Set();
           this.value = value;
       }
   }

@@ -132,17 +132,17 @@ export class Sudoku {
     return this.getValuesByQuadrant().flat();
   }
 
-  updatePossibleValues() {
+  updateHints() {
     let isSomethingRemoved = this.updateByValues();
     
     // this.cellQuadrants.forEach((cellBlock) =>
-    //   this.updateByUniquePossibleValueInBlock(cellBlock)
+    //   this.updateByUniqueHintInBlock(cellBlock)
     // );
     // this.cellRows.forEach((cellBlock) =>
-    //   this.updateByUniquePossibleValueInBlock(cellBlock)
+    //   this.updateByUniqueHintInBlock(cellBlock)
     // );
     // this.cellColumns.forEach((cellBlock) =>
-    //   this.updateByUniquePossibleValueInBlock(cellBlock)
+    //   this.updateByUniqueHintInBlock(cellBlock)
     // );
 
     return isSomethingRemoved;
@@ -158,7 +158,7 @@ export class Sudoku {
       if (value !== 0) {
         for (const iteratingCell of this.cellQuadrants[quadrant]) {
           if (iteratingCell !== cell) {
-            const isRemoved = iteratingCell.removePossibleValue(value);
+            const isRemoved = iteratingCell.removeHint(value);
 
             if (isRemoved) {
               isSomethingRemoved = true;
@@ -168,7 +168,7 @@ export class Sudoku {
 
         for (const iteratingCell of this.cellRows[row]) {
           if (iteratingCell !== cell) {
-            const isRemoved = iteratingCell.removePossibleValue(value);
+            const isRemoved = iteratingCell.removeHint(value);
 
             if (isRemoved) {
               isSomethingRemoved = true;
@@ -178,7 +178,7 @@ export class Sudoku {
 
         for (const iteratingCell of this.cellColumns[column]) {
           if (iteratingCell !== cell) {
-            const isRemoved = iteratingCell.removePossibleValue(value);
+            const isRemoved = iteratingCell.removeHint(value);
 
             if (isRemoved) {
               isSomethingRemoved = true;
@@ -191,22 +191,22 @@ export class Sudoku {
     return isSomethingRemoved;
   }
 
-  updateByUniquePossibleValueInBlock(cellBlock) {
+  updateByUniqueHintInBlock(cellBlock) {
     // block is row, column, or quadrant
-    const possibleValueToCellsMap = new Map();
+    const hintToCellsMap = new Map();
     let isSomethingIsSet = false;
 
     for (let value = 1; value <= this.sudokuSize; value++) {
-      possibleValueToCellsMap.set(value, []);
+      hintToCellsMap.set(value, []);
     }
 
     for (const cell of cellBlock) {
-      for (const value of cell.possibleValues.values()) {
-        possibleValueToCellsMap.get(value).push(cell);
+      for (const value of cell.hints.values()) {
+        hintToCellsMap.get(value).push(cell);
       }
     }
 
-    for (const [value, cells] of possibleValueToCellsMap) {
+    for (const [value, cells] of hintToCellsMap) {
       if (cells.length === 1) {
         cells[0].setValue(value);
         isSomethingIsSet = true;
@@ -220,7 +220,7 @@ export class Sudoku {
     let isSomethingRemoved;
 
     do {
-      isSomethingRemoved = this.updatePossibleValues();
+      isSomethingRemoved = this.updateHints();
     } while (isSomethingRemoved);
   }
 
@@ -233,7 +233,7 @@ export class Sudoku {
       isSomethingIsSet = false;
       
       for (const quadrant of this.cellQuadrants) {
-        const isQuadrantsSet = this.updateByUniquePossibleValueInBlock(quadrant);
+        const isQuadrantsSet = this.updateByUniqueHintInBlock(quadrant);
 
         if (isQuadrantsSet) {
           isSomethingIsSet = true;
@@ -241,7 +241,7 @@ export class Sudoku {
       }
 
       for (const row of this.cellRows) {
-        const isRowsSet = this.updateByUniquePossibleValueInBlock(row);
+        const isRowsSet = this.updateByUniqueHintInBlock(row);
 
         if (isRowsSet) {
           isSomethingIsSet = true;
@@ -249,7 +249,7 @@ export class Sudoku {
       }
 
       for (const column of this.cellColumns) {
-         const isColumnsSet = this.updateByUniquePossibleValueInBlock(column);
+         const isColumnsSet = this.updateByUniqueHintInBlock(column);
 
          if (isColumnsSet) {
           isSomethingIsSet = true;
