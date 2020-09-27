@@ -2,15 +2,15 @@ import { Cell } from './cell';
 import cloneDeep from 'lodash/cloneDeep';
 
 const mock = [
-  [2, 1, 5, 0, 6, 4, 7, 8, 9],
-  [7, 0, 6, 1, 5, 8, 3, 0, 0],
-  [8, 3, 0, 7, 2, 9, 5, 6, 0],
-  [6, 7, 0, 5, 0, 2, 8, 4, 1],
-  [0, 1, 0, 8, 4, 3, 2, 6, 7],
-  [4, 0, 2, 1, 0, 6, 0, 0, 5],
-  [0, 3, 6, 0, 0, 0, 0, 5, 8],
-  [4, 8, 9, 5, 3, 1, 0, 7, 2],
-  [2, 5, 0, 6, 4, 8, 0, 0, 0],
+  [0, 1, 2, 0, 0, 0, 5, 0, 0],
+  [4, 0, 0, 6, 0, 0, 0, 9, 2],
+  [9, 0, 7, 0, 0, 2, 0, 0, 4],
+  [0, 0, 8, 4, 0, 5, 7, 0, 0],
+  [0, 0, 0, 8, 0, 0, 0, 0, 0],
+  [0, 1, 9, 0, 0, 0, 0, 0, 0],
+  [0, 0, 3, 0, 0, 0, 0, 0, 0],
+  [1, 0, 0, 5, 0, 4, 7, 0, 0],
+  [8, 0, 0, 0, 2, 0, 3, 0, 0],
 ]; //Zero means empty cell
 
 export class Sudoku {
@@ -104,11 +104,15 @@ export class Sudoku {
     }
   }
 
+  checkIfSolved() {
+    return this.cells.every((cell) => cell.value !== 0);
+  }
+
   hasDuplicateValues(arr) {
     for (const elem of arr) {
       const values = elem
         .map((cell) => cell.value)
-        .filter(value => value !== 0);
+        .filter((value) => value !== 0);
       const set = new Set(values);
 
       if (set.size !== values.length) {
@@ -132,26 +136,9 @@ export class Sudoku {
     return this.getValuesByQuadrant().flat();
   }
 
-  updateHints() {
-    let isSomethingRemoved = this.updateByValues();
-    
-    // this.cellQuadrants.forEach((cellBlock) =>
-    //   this.updateByUniqueHintInBlock(cellBlock)
-    // );
-    // this.cellRows.forEach((cellBlock) =>
-    //   this.updateByUniqueHintInBlock(cellBlock)
-    // );
-    // this.cellColumns.forEach((cellBlock) =>
-    //   this.updateByUniqueHintInBlock(cellBlock)
-    // );
+  updateHintsByValues() {
+    let someHintsWereUpdated = false;
 
-    return isSomethingRemoved;
-  }
-
-  
-
-  updateByValues() {
-    let isSomethingRemoved = false;
     for (const cell of this.cells) {
       const { value, quadrant, row, column } = cell;
 
@@ -161,7 +148,7 @@ export class Sudoku {
             const isRemoved = iteratingCell.removeHint(value);
 
             if (isRemoved) {
-              isSomethingRemoved = true;
+              someHintsWereUpdated = true;
             }
           }
         }
@@ -171,7 +158,7 @@ export class Sudoku {
             const isRemoved = iteratingCell.removeHint(value);
 
             if (isRemoved) {
-              isSomethingRemoved = true;
+              someHintsWereUpdated = true;
             }
           }
         }
@@ -181,20 +168,36 @@ export class Sudoku {
             const isRemoved = iteratingCell.removeHint(value);
 
             if (isRemoved) {
-              isSomethingRemoved = true;
+              someHintsWereUpdated = true;
             }
           }
         }
       }
     }
 
-    return isSomethingRemoved;
+    return someHintsWereUpdated;
   }
 
-  updateByUniqueHintInBlock(cellBlock) {
-    // block is row, column, or quadrant
+  updateValuesByHints() {
+    this.cells.forEach((cell) => cell.calculateValue());
+  }
+
+  updateValuesByHintsUntillLoop() {
+    let someHintsWereUpdated = false;
+
+    do {
+      someHintsWereUpdated = this.updateHintsByValues();
+
+      if (someHintsWereUpdated) {
+        this.updateValuesByHints();
+      }
+    } while (someHintsWereUpdated);
+
+    return false;
+  }
+  
+  createHintToCellsMap(cellBlock) {
     const hintToCellsMap = new Map();
-    let isSomethingIsSet = false;
 
     for (let value = 1; value <= this.sudokuSize; value++) {
       hintToCellsMap.set(value, []);
@@ -206,62 +209,147 @@ export class Sudoku {
       }
     }
 
+    return hintToCellsMap;
+  }
+
+  updateValuesByUniqueHintInBlock(cellBlock) {
+    // block is row, column, or quadrant
+    const hintToCellsMap = this.createHintToCellsMap(cellBlock);
+    let somethingWasSet = false;
+
     for (const [value, cells] of hintToCellsMap) {
       if (cells.length === 1) {
         cells[0].setValue(value);
-        isSomethingIsSet = true;
+        this.updateHintsByValues();
+        somethingWasSet = true;
       }
     }
 
-    return isSomethingIsSet;
+    return somethingWasSet;
   }
 
-  solveUntillLoop() {
-    let isSomethingRemoved;
+  updateValuesByUniqueHints() {
+    let someValuesWereUpdated = false;
 
-    do {
-      isSomethingRemoved = this.updateHints();
-    } while (isSomethingRemoved);
+    for (const quadrant of this.cellQuadrants) {
+      const quadrantValuesWereUpdated = this.updateValuesByUniqueHintInBlock(
+        quadrant
+      );
+
+      if (quadrantValuesWereUpdated) {
+        someValuesWereUpdated = true;
+      }
+    }
+
+    for (const row of this.cellRows) {
+      const quadrantValuesWereUpdated = this.updateValuesByUniqueHintInBlock(
+        row
+      );
+
+      if (quadrantValuesWereUpdated) {
+        someValuesWereUpdated = true;
+      }
+    }
+
+    for (const column of this.cellColumns) {
+      const columnValuesWereUpdated = this.updateValuesByUniqueHintInBlock(
+        column
+      );
+
+      if (columnValuesWereUpdated) {
+        someValuesWereUpdated = true;
+      }
+    }
+
+    return someValuesWereUpdated;
+  }
+
+  checkIsAllCellsInOneBlock(cells, cellBlockType) {
+    if (
+      cellBlockType !== 'row' ||
+      cellBlockType !== 'column' ||
+      cellBlockType !== 'quadrant'
+    ) {
+      throw new TypeError(`${cellBlockType} is not a valid cellBlockType`);
+    }
+    const firstCellBlock = cells[0][cellBlockType];
+
+    return cells.every((cell) => cell[cellBlockType] === firstCellBlock);
+  }
+
+  isCellInArray(cell, cellArr) {
+    return cellArr.some((cellInArr) => cellInArr === cell);
+  }
+
+  removeHintsFromOtherCellsInBlock(
+    hintValue,
+    cellsWithThisHint,
+    cellBlockType
+  ) {
+    const cell = cellsWithThisHint[0];
+    const cellBlockIndex = cell[cellBlockType];
+    let isRemoved = false;
+
+    switch (cellBlockIndex) {
+      case 'quadrant':
+        for (const iteratingCell of this.cellQuadrants[cellBlockIndex]) {
+          if (!this.isCellInArray(iteratingCell, cellsWithThisHint)) {
+            iteratingCell.removeHint(hintValue);
+            isRemoved = true;
+          }
+        }
+        break;
+
+      case 'row':
+        for (const iteratingCell of this.cellRows[cellBlockIndex]) {
+          if (!this.isCellInArray(iteratingCell, cellsWithThisHint)) {
+            iteratingCell.removeHint(hintValue);
+            isRemoved = true;
+          }
+        }
+        break;
+
+      case 'column':
+        for (const iteratingCell of this.cellColumns[cellBlockIndex]) {
+          if (!this.isCellInArray(iteratingCell, cellsWithThisHint)) {
+            iteratingCell.removeHint(hintValue);
+            isRemoved = true;
+          }
+        }
+        break;
+
+      default:
+        throw new TypeError(`${cellBlockType} is not a valid cellBlockType`);
+    }
+
+    return isRemoved;
   }
 
   solve() {
-    let isSomethingIsSet;
-
     do {
-      this.solveUntillLoop();
+      this.updateValuesByHintsUntillLoop();
+      this.updateValuesByUniqueHints();
+      this.updateValuesByContradiction();
+    } while (!this.checkIfSolved());
+  }
 
-      isSomethingIsSet = false;
-      
-      for (const quadrant of this.cellQuadrants) {
-        const isQuadrantsSet = this.updateByUniqueHintInBlock(quadrant);
+  recursiveMethod() {
+    if (this.checkIfSolved()) {
+      return true;
+    }
+    const sudoku = deepclo
+    sudoku.updateHintsByValues();
 
-        if (isQuadrantsSet) {
-          isSomethingIsSet = true;
-        }
-      }
+    // выставляем предположение
 
-      for (const row of this.cellRows) {
-        const isRowsSet = this.updateByUniqueHintInBlock(row);
+    sudoku.solve();
 
-        if (isRowsSet) {
-          isSomethingIsSet = true;
-        }
-      }
+    return true;
 
-      for (const column of this.cellColumns) {
-         const isColumnsSet = this.updateByUniqueHintInBlock(column);
-
-         if (isColumnsSet) {
-          isSomethingIsSet = true;
-        }
-      }
-
-    } while (isSomethingIsSet);
   }
 }
 
 const sudoku = new Sudoku(mock);
+sudoku.updateHintsByValues();
 
-console.log(sudoku.getValues());
-sudoku.solveUntillLoop();
-console.log(sudoku.getValues());
+console.log(sudoku.createHintToCellsMap(sudoku.cellQuadrants[0]));
