@@ -33,9 +33,9 @@ export class Cell {
       return;
     }
 
-    if (this.hints.size === 0) {
-      throw new Error('Setting an already calculated value');
-    }
+    // if (this.hints.size === 0) {
+    //   throw new Error('Setting an already calculated value');
+    // }
 
     if (this.hints.has(value)) {
       this.hints = new Set();

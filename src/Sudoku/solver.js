@@ -92,20 +92,29 @@ export class Sudoku {
     const isQuadrantsInvalid = this.hasDuplicateValues(this.cellQuadrants);
 
     if (isColumnsInvalid) {
+      console.log(this.getValuesByRows());
       throw new Error('Ошибка! Дублирование значений в столбцах.');
     }
 
     if (isRowsInvalid) {
+      console.log(this.getValuesByRows());
       throw new Error('Ошибка! Дублирование значений в строках.');
     }
 
     if (isQuadrantsInvalid) {
+      console.log(this.getValuesByRows());
       throw new Error('Ошибка! Дублирование значений в квадрантах.');
     }
   }
 
   checkIfSolved() {
     return this.cells.every((cell) => cell.value !== 0);
+  }
+
+  checkIfContradiction() {
+    return this.cells.some(
+      (cell) => cell.value === 0 && cell.hints.size === 0
+    );
   }
 
   hasDuplicateValues(arr) {
@@ -123,7 +132,7 @@ export class Sudoku {
     return false;
   }
 
-  getValuesByQuadrant() {
+  getValuesByQuadrants() {
     const values = [];
 
     for (const quadrant of this.cellQuadrants) {
@@ -132,8 +141,30 @@ export class Sudoku {
     return values;
   }
 
+  getValuesByRows() {
+    const values = [];
+
+    for (const row of this.cellRows) {
+      values.push(row.map((cell) => cell.value));
+    }
+    return values;
+  }
+
   getValues() {
-    return this.getValuesByQuadrant().flat();
+    return this.getValuesByQuadrants().flat();
+  }
+
+  setCellValues(cells) {
+    this.cells.forEach((cell, index) => {
+      cell.value = cells[index].value;
+    });
+  }
+
+  clone() {
+    const newData = this.getValuesByQuadrants();
+    const newSudoku = new Sudoku(newData);
+    newSudoku.updateHintsByValues();
+    return newSudoku;
   }
 
   updateHintsByValues() {
@@ -195,7 +226,7 @@ export class Sudoku {
 
     return false;
   }
-  
+
   createHintToCellsMap(cellBlock) {
     const hintToCellsMap = new Map();
 
@@ -326,26 +357,88 @@ export class Sudoku {
   }
 
   solve() {
+    let canContinueSolvingByHints = false;
     do {
-      this.updateValuesByHintsUntillLoop();
-      this.updateValuesByUniqueHints();
-      this.updateValuesByContradiction();
+      if (this.checkIfContradiction()) {
+        return false;
+      }
+
+      canContinueSolvingByHints = this.updateHintsByValues();
+
+      this.updateValuesByHints();
+
+      if (!canContinueSolvingByHints) {
+        canContinueSolvingByHints = this.updateValuesByUniqueHints();
+      }
+
+      if (!canContinueSolvingByHints) {
+        if (this.checkIfSolved()) {
+          return true;
+        }
+        this.updateValuesByContradiction();
+      }
     } while (!this.checkIfSolved());
-  }
-
-  recursiveMethod() {
-    if (this.checkIfSolved()) {
-      return true;
-    }
-    const sudoku = deepclo
-    sudoku.updateHintsByValues();
-
-    // выставляем предположение
-
-    sudoku.solve();
 
     return true;
+  }
 
+  updateValuesByContradiction() {
+    const sudoku = this.clone();
+
+    if (sudoku.checkIfContradiction()) {
+      return false;
+    }
+
+    const assumptionTarget = sudoku.makeAssumption();
+    const hint = Array.from(assumptionTarget.hints)[0];
+    assumptionTarget.setValue(hint);
+    sudoku.updateHintsByValues();
+    console.log('contradiction', sudoku.getValuesByRows());
+
+    const isAssumptionTrue = sudoku.solve();
+
+    if (!isAssumptionTrue) {
+      this.cells
+        .find((cell) => cell.id === assumptionTarget.id)
+        .removeHint(hint);
+    } else {
+      this.setCellValues(sudoku.cells);
+    }
+
+    return true;
+  }
+
+  defineMaxLength(assumptionAccumulator, cellBlocks) {
+    for (const cellBlock of cellBlocks) {
+      const numberOfValues = cellBlock
+        .map((cell) => cell.value)
+        .filter((value) => value !== 0).length;
+
+      if (
+        assumptionAccumulator.numberOfValues < numberOfValues &&
+        numberOfValues < this.sudokuSize
+      ) {
+        assumptionAccumulator.cellBlock = cellBlock;
+        assumptionAccumulator.numberOfValues = numberOfValues;
+      }
+    }
+  }
+
+  makeAssumption() {
+    const assumptionAccumulator = {
+      cellBlock: null,
+      numberOfValues: -1,
+    };
+
+    this.defineMaxLength(assumptionAccumulator, this.cellQuadrants);
+    this.defineMaxLength(assumptionAccumulator, this.cellRows);
+    this.defineMaxLength(assumptionAccumulator, this.cellColumns);
+
+    const assumptionTarget = assumptionAccumulator.cellBlock.find(
+      (cell) => cell.value === 0
+    );
+
+    return assumptionTarget;
   }
 }
 

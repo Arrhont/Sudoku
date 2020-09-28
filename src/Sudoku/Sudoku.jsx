@@ -4,6 +4,30 @@ import cloneDeep from 'lodash/cloneDeep';
 import { Sudoku as SudokuSolver } from './solver'
 import './Sudoku.css';
 
+const hardmock = [
+    [0, 1, 2, 0, 0, 0, 5, 0, 0],
+    [4, 0, 0, 6, 0, 0, 0, 9, 2],
+    [9, 0, 7, 0, 0, 2, 0, 0, 4],
+    [0, 0, 8, 4, 0, 5, 7, 0, 0],
+    [0, 0, 0, 8, 0, 0, 0, 0, 0],
+    [0, 1, 9, 0, 0, 0, 0, 0, 0],
+    [0, 0, 3, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 5, 0, 4, 7, 0, 0],
+    [8, 0, 0, 0, 2, 0, 3, 0, 0],
+  ];
+
+  const mediumMock = [
+    [0, 0, 0, 0, 0, 6, 0, 0, 9],
+    [0, 8, 0, 0, 5, 4, 6, 0, 0],
+    [7, 0, 4, 0, 0, 0, 1, 0, 0],
+    [0, 0, 2, 5, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 3],
+    [5, 7, 8, 3, 0, 0, 0, 1, 2],
+    [0, 3, 0, 0, 6, 0, 9, 0, 0],
+    [0, 0, 1, 4, 0, 5, 3, 0, 0],
+    [6, 0, 0, 8, 3, 7, 0, 5, 0],
+  ];
+
 export function Sudoku() {
     const [quadrants, setQuadrants] = useState(createEmptyQuadrantsState());
     const sudokuSize = quadrants.length;
@@ -48,10 +72,9 @@ export function Sudoku() {
     function solve() {
         const sudoku = new SudokuSolver(quadrants);
         console.log(sudoku);
-        debugger;
         sudoku.solve();
 
-        setQuadrants(sudoku.getValuesByQuadrant());
+        setQuadrants(sudoku.getValuesByQuadrants());
     }
 
     return (
