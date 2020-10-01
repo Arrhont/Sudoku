@@ -1,11 +1,11 @@
 export class Cell {
   constructor(cellData) {
-    this.id = cellData.row + '_' + cellData.column;
+    this.id = cellData.rowIndex + '_' + cellData.columnIndex;
     this.value = cellData.value;
-    this.row = cellData.row;
-    this.column = cellData.column;
+    this.rowIndex = cellData.rowIndex;
+    this.columnIndex = cellData.columnIndex;
+    this.quadrantIndex = cellData.quadrantIndex;
     this.sudokuSize = cellData.sudokuSize;
-    this.quadrant = cellData.quadrant;
 
     const hints = new Set();
     for (let i = 0; i < this.sudokuSize; i++) {
