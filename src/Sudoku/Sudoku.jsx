@@ -1,111 +1,133 @@
 import React, { useState } from 'react';
 import { Quadrant } from '../Quadrant/Quadrant';
+import { Sudoku as SudokuSolver } from './solver';
+import { defaultSettings } from '../settings';
 import cloneDeep from 'lodash/cloneDeep';
-import { Sudoku as SudokuSolver } from './solver'
 import './Sudoku.css';
 
 const hardmock = [
-    [0, 1, 2, 0, 0, 0, 5, 0, 0],
-    [4, 0, 0, 6, 0, 0, 0, 9, 2],
-    [9, 0, 7, 0, 0, 2, 0, 0, 4],
-    [0, 0, 8, 4, 0, 5, 7, 0, 0],
-    [0, 0, 0, 8, 0, 0, 0, 0, 0],
-    [0, 1, 9, 0, 0, 0, 0, 0, 0],
-    [0, 0, 3, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 5, 0, 4, 7, 0, 0],
-    [8, 0, 0, 0, 2, 0, 3, 0, 0],
-  ];
+  [0, 1, 2, 0, 0, 0, 5, 0, 0],
+  [4, 0, 0, 6, 0, 0, 0, 9, 2],
+  [9, 0, 7, 0, 0, 2, 0, 0, 4],
+  [0, 0, 8, 4, 0, 5, 7, 0, 0],
+  [0, 0, 0, 8, 0, 0, 0, 0, 0],
+  [0, 1, 9, 0, 0, 0, 0, 0, 0],
+  [0, 0, 3, 0, 0, 0, 0, 0, 0],
+  [1, 0, 0, 5, 0, 4, 7, 0, 0],
+  [8, 0, 0, 0, 2, 0, 3, 0, 0],
+];
 
-  const mediumMock = [
-    [0, 0, 0, 0, 0, 6, 0, 0, 9],
-    [0, 8, 0, 0, 5, 4, 6, 0, 0],
-    [7, 0, 4, 0, 0, 0, 1, 0, 0],
-    [0, 0, 2, 5, 0, 0, 0, 0, 0],
-    [0, 1, 0, 0, 0, 0, 0, 0, 3],
-    [5, 7, 8, 3, 0, 0, 0, 1, 2],
-    [0, 3, 0, 0, 6, 0, 9, 0, 0],
-    [0, 0, 1, 4, 0, 5, 3, 0, 0],
-    [6, 0, 0, 8, 3, 7, 0, 5, 0],
-  ];
+const mediumMock = [
+  [0, 0, 0, 0, 0, 6, 0, 0, 9],
+  [0, 8, 0, 0, 5, 4, 6, 0, 0],
+  [7, 0, 4, 0, 0, 0, 1, 0, 0],
+  [0, 0, 2, 5, 0, 0, 0, 0, 0],
+  [0, 1, 0, 0, 0, 0, 0, 0, 3],
+  [5, 7, 8, 3, 0, 0, 0, 1, 2],
+  [0, 3, 0, 0, 6, 0, 9, 0, 0],
+  [0, 0, 1, 4, 0, 5, 3, 0, 0],
+  [6, 0, 0, 8, 3, 7, 0, 5, 0],
+];
+
+export const SettingsContext = React.createContext();
+export const HoveredContext = React.createContext();
 
 export function Sudoku() {
-    const [quadrants, setQuadrants] = useState(createEmptyQuadrantsState());
-    const sudokuSize = quadrants.length;
-    const quadrantSize = Math.sqrt(quadrants.length);
+  const [quadrants, setQuadrants] = useState(createEmptyQuadrantsState());
+  const [hoveredCell, setHoveredCell] = useState();
+  const [settings, setSettings] = useState(defaultSettings);
 
-    function createEmptyQuadrantsState(size = 9) {
-        const state = [];
+  const sudokuSize = quadrants.length;
+  const quadrantSize = Math.sqrt(quadrants.length);
 
-        for (let i = 0; i < size; i++) {
-            const quadrant = new Array(size).fill(0);
-            state[i] = quadrant;
-        }
+  function createEmptyQuadrantsState(size = 9) {
+    const state = [];
 
-        return state;
+    for (let i = 0; i < size; i++) {
+      const quadrant = new Array(size).fill(0);
+      state[i] = quadrant;
     }
 
-    function setCellValue(quadrantId, cellId, value) {
-        const newQuadrants = cloneDeep(quadrants);
-        const numberedValue = Number(value);
+    return state;
+  }
 
-        if (!validate(numberedValue)) {
-            return;
-        }
+  function setCellValue(quadrantId, cellId, value) {
+    const newQuadrants = cloneDeep(quadrants);
+    const numberedValue = Number(value);
 
-        newQuadrants[quadrantId][cellId] = numberedValue;
-
-        setQuadrants(newQuadrants);
+    if (!validate(numberedValue)) {
+      return;
     }
 
-    function validate(value) {
-        if (isNaN(value)) {
-            return false;
-        }
+    newQuadrants[quadrantId][cellId] = numberedValue;
 
-        if (value > sudokuSize) {
-            return false;
-        }
+    setQuadrants(newQuadrants);
+  }
 
-        return true;
+  function validate(value) {
+    if (isNaN(value)) {
+      return false;
     }
 
-    function solve() {
-        const sudoku = new SudokuSolver(quadrants);
-        console.log(sudoku);
-        sudoku.solve();
-
-        setQuadrants(sudoku.getValuesByQuadrants());
+    if (value > sudokuSize) {
+      return false;
     }
 
-    return (
-        <div>
-            <div
-                className="Sudoku"
-                style={{
-                    gridTemplateColumns: `repeat(${quadrantSize}, 1fr)`,
-                    gridTemplateRows: `repeat(${quadrantSize}, 1fr)`,
-                }}
-            >
-                {quadrants.map((quadrant, index) => (
-                    <Quadrant
-                        cellValues={quadrant}
-                        key={index}
-                        quadrantId={index}
-                        setCellValue={setCellValue}
-                    />
-                ))}
-            </div>
-            <input
-                type="number"
-                value={quadrantSize}
-                onChange={(event) => {
-                    const size = event.target.value * event.target.value;
-                    setQuadrants(createEmptyQuadrantsState(size));
-                }}
-            ></input>
-            <div>
-                <button onClick={solve}>Решить</button>
-            </div>
+    return true;
+  }
+
+  function solve() {
+    const sudoku = new SudokuSolver(quadrants);
+    console.log(sudoku);
+    sudoku.solve();
+
+    setQuadrants(sudoku.getValuesByQuadrants());
+  }
+
+  function toggleColumnAndRowHighLight() {
+    setSettings((prevSettings) => {
+      const newSettings = cloneDeep(prevSettings);
+      newSettings.highlight = !prevSettings.highlight;
+
+      return newSettings;
+    });
+  }
+
+  return (
+    <SettingsContext.Provider value={settings}>
+      <HoveredContext.Provider value={[hoveredCell, setHoveredCell]}>
+        <div
+          className="Sudoku"
+          style={{
+            gridTemplateColumns: `repeat(${quadrantSize}, 1fr)`,
+            gridTemplateRows: `repeat(${quadrantSize}, 1fr)`,
+          }}
+        >
+          {quadrants.map((quadrant, index) => (
+            <Quadrant
+              cellValues={quadrant}
+              key={index}
+              quadrantId={index}
+              setCellValue={setCellValue}
+            />
+          ))}
         </div>
-    );
+        <input
+          type="number"
+          value={quadrantSize}
+          onChange={(event) => {
+            const size = event.target.value * event.target.value;
+            setQuadrants(createEmptyQuadrantsState(size));
+          }}
+        ></input>
+        <div>
+          <button onClick={solve}>Решить</button>
+        </div>
+        <div>
+          <input type="checkbox" onChange={toggleColumnAndRowHighLight}></input>{' '}
+          Подсвечивать колонки и столбцы
+        </div>
+      </HoveredContext.Provider>
+    </SettingsContext.Provider>
+  );
 }

@@ -2,3 +2,7 @@
   width: 15px;
   margin: 0px;
 }
+
+.Cell_Highlighted {
+  background-color: #61dafb;
+}

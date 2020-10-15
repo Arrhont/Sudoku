@@ -20,6 +20,7 @@ export function Quadrant(props) {
                     key={index}
                     cellId={index}
                     quadrantId={quadrantId}
+                    sudokuDimension={Math.sqrt(cellValues.length)}
                     setCellValue={setCellValue}
                 ></Cell>
             ))}
