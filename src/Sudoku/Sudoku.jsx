@@ -33,8 +33,8 @@ export const SettingsContext = React.createContext();
 export const HoveredContext = React.createContext();
 
 export function Sudoku() {
-  const [quadrants, setQuadrants] = useState(createEmptyQuadrantsState());
-  const [hoveredCell, setHoveredCell] = useState();
+  const [quadrants, setQuadrants] = useState(mediumMock);
+  const [hoveredCell, setHoveredCell] = useState({ quadrantId: null, cellId: null, value: null });
   const [settings, setSettings] = useState(defaultSettings);
 
   const sudokuSize = quadrants.length;
@@ -93,6 +93,15 @@ export function Sudoku() {
     });
   }
 
+  function toggleEasyMode() {
+    setSettings((prevSettings) => {
+      const newSettings = cloneDeep(prevSettings);
+      newSettings.easyMode = !prevSettings.easyMode;
+
+      return newSettings;
+    });
+  }
+
   return (
     <SettingsContext.Provider value={settings}>
       <HoveredContext.Provider value={[hoveredCell, setHoveredCell]}>
@@ -101,6 +110,12 @@ export function Sudoku() {
           style={{
             gridTemplateColumns: `repeat(${quadrantSize}, 1fr)`,
             gridTemplateRows: `repeat(${quadrantSize}, 1fr)`,
+          }}
+          onKeyDown={(event) => {
+            if(hoveredCell.value !== null) {
+              console.log(event.key);
+              setCellValue(hoveredCell.quadrantId, hoveredCell.cellId, event.key);
+            }
           }}
         >
           {quadrants.map((quadrant, index) => (
@@ -126,6 +141,10 @@ export function Sudoku() {
         <div>
           <input type="checkbox" onChange={toggleColumnAndRowHighLight}></input>{' '}
           Подсвечивать колонки и столбцы
+        </div>
+        <div>
+          <input type="checkbox" onChange={toggleEasyMode}></input>{' '}
+          Простой режим
         </div>
       </HoveredContext.Provider>
     </SettingsContext.Provider>

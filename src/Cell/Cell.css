@@ -6,3 +6,7 @@
 .Cell_Highlighted {
   background-color: #61dafb;
 }
+
+.Cell_CellWithSameValue{
+  background-color: red;
+}
